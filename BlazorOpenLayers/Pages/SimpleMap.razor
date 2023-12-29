@@ -1,0 +1,61 @@
+﻿@page "/SimpleMap"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Simple Map</PageTitle>
+
+<h1>Simple Map</h1>
+
+<div id="map" style="width: 500px; height: 500px">
+    
+</div>
+
+<button @onclick="AddPointInCenter">Add point in center</button>
+
+@if(!string.IsNullOrEmpty(clickedPosString))
+{
+    <p><strong>Clicked: @clickedPosString</strong></p>
+}
+
+@if(!string.IsNullOrEmpty(extentString))
+{
+    <p><strong>Extent: @extentString</strong></p>
+}
+
+@code {
+    private string clickedPosString = "";
+    private string extentString = "";
+    private (double x1, double y1, double x2, double y2) extent;
+
+    private DotNetObjectReference<SimpleMap> _ref;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ref = DotNetObjectReference.Create(this);
+            JSRuntime.InvokeVoidAsync("registerClass", "SimpleMap", _ref);
+            JSRuntime.InvokeVoidAsync("initMap", "map");
+        }
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    [JSInvokable]
+    public void OnMapClicked(double x, double y)
+    {
+        clickedPosString = $"X={x}, Y={y}";
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnMapExtentChanged(double x1, double y1, double x2, double y2)
+    {
+        extentString = $"X1={x1}, Y1={y1} / X2={x2}, Y2={y2}";
+        extent = (x1, y1, x2, y2);
+        StateHasChanged();
+    }
+
+    private void AddPointInCenter()
+    {
+        JSRuntime.InvokeVoidAsync("addPoint", (extent.x1 + extent.x2) / 2, (extent.y1 + extent.y2) / 2);
+    }
+}
